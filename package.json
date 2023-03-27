@@ -1,0 +1,13 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "scripts": {
+    "format": "npx rome format ./uniswap_fork ./telegram_chatgpt_bot"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "rome": "^11.0.0"
+  }
+}
