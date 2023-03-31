@@ -7,7 +7,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ChatGPT Telegram bot</title>
   <link rel="stylesheet" href="index.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/styles/default.min.css">
+  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.7.0/highlight.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      document.querySelectorAll('pre code').forEach((el) => {
+        hljs.highlightElement(el);
+      });
+    });
+  </script>
 </head>
 
 <body>
@@ -26,7 +35,19 @@
   </header>
   <main>
     <section>
-      <h2>Why do you want it?</h2>
+      <h2>Table of contents</h2>
+      <ul>
+        <li><a href="#why-do-you-want-it">Why?</a></li>
+        <li><a href="#initial-setup">Initial setup</a></li>
+        <li><a href="#development">Development</a></li>
+        <li><a href="#marketing">Marketing</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 id="why-do-you-want-it">Why do you want it?</h2>
       <p>
         Are you looking for an easy and profitable way to earn money online?
         Look no further than creating a Telegram bot with ChatGPT! This
@@ -49,72 +70,198 @@
     </section>
 
     <section>
-      <h2>Initial setup</h2>
+      <h2 id="initial-setup">Initial setup</h2>
       <p>
-        First of all you need to set up a Telegram bot account. To do this,
-        follow these steps:
+        First of all you need to set up a Telegram bot account, create an OpenAI account and a Cloudflare account.
+        To do this, follow these steps:
       </p>
       <p>
       <ol>
         <li>
           Open the main bot responsible for bot creation:
-          <a href="https://t.me/BotFather">BotFather</a>. Start a chat with
+          <a href="https://t.me/BotFather" target="_blank">BotFather</a>. Start a chat with
           the BotFather and follow the instructions to create a new bot
           account. Once you've created the bot account, you'll be given a
           token. It looks like this:
           <code class="no-wrap">6079022061:AAFWgW7O2_2Hxp-Bk7Q3TgFf_ie3aectUfc</code>. Keep
           this token safe and in secret, as you'll need it to connect your bot to ChatGPT.
+          Next click on the bot link in the beginning of a BotFather message and press <u>start</u> button.
+          Send any message to that chat. Now you can receive a chat ID for interacting in that chat.
+          Open this link in a browser (replace &lt;TOKEN&gt; with your bot token):
+          <code>
+            https://api.telegram.org/bot<5818750440:AAEF4tY2wlSUv3S0ymCaAFpmgTKNDJw9g38>/getUpdates
+          </code>
+
+          Copy chat ID from the result. It looks like: <code>1015004128</code>
         </li>
         <li>
-          The next step is to set up ChatGPT. Go to the OpenAI website and
-          sign up for an account. Once you've signed up, create a new API key. It looks like this:
+          The next step is to set up ChatGPT. Go to the <a href="https://platform.openai.com/" target="_blank">OpenAI platform</a>
+          and sign up for an account. Once you've signed up, create a new API key. It looks like this:
           <code class="no-wrap">sk-czw4SSZP2JoDGUoq9VqeW3BlbxFJmxIm3RMOk19BLjgFmbXV</code>. Save this token in a secret
           place.
-
+        </li>
+        <li>
+          Create a new Cloudflare account. Go to the <a href="https://www.cloudflare.com/" target="_blank">Cloudflare site</a> and sign up for an account.
         </li>
       </ol>
       </p>
     </section>
 
     <section>
-      <h2>Development</h2>
-      Now that you've set up both your
-          Telegram bot account and ChatGPT, it's time to connect them.
-      Install the python-telegram-bot library. Write a Python script that
-      connects your Telegram bot to ChatGPT. Test your bot to make sure it's
-      working properly.<br /><br />
+      <h2 id="development">Development</h2>
+      <p>
+        Now that you've set up both your
+      Telegram bot account and ChatGPT, it's time to connect them.
+      Firstly you need to install <a href="https://nodejs.org/">Node.js</a>.
+      The major version in this guide is 18. With Node.js installation you will get NPM.
+      Install a <abbr title="Command line interface">CLI</abbr> for workers from the command line interface:
+      <code class="block">
+        npm install -g wrangler
+      </code>
+      Create a new folder somewhere in your system. We name it <b>chat_bot</b>.
+      Open your folder and initialize your project:
+      <code class="block">
+        npx wrangler init .
+      </code>
+      Answer on all all questions like this:
+      <img src="./images/wrangler_questions.jpg" alt="">
+
+      Open <code>package.json</code> file and change a start script to
+      <code>"start": "wrangler dev --local",</code>
+      Start your worker with a command:
+      <code class="block">
+        npm run start
+      </code>
+
+      Open <b>http://127.0.0.1:8787</b> in your browser. You should see the message:
+      "Hello World!".
+      </p>
+      <p>
+        Now we can start to write a new code for our bot.
+        First of all let's create different files for different sources and actions.
+        Create files these files inside of the <u>src</u> folder:
+        <ul>
+          <li>constants.js</li>
+          <li>telegram.js</li>
+          <li>openai.js</li>
+        </ul>
+         
+        Let's fill our <u>constants.js</u> file:
+        <pre>
+          <code>
+export const TELEGRAM_API_DOMAIN = "https://api.telegram.org";
+export const OPENAI_API_DOMAIN = "https://api.openai.com";
+          </code>
+        </pre>
+
+        Now put code for Telegram:
+        <pre>
+          <code>
+import { TELEGRAM_API_DOMAIN } from "./constants";
+
+// Interact with a Telegram API
+const send = async (message, token, context) => {
+  return await fetch(`${TELEGRAM_API_DOMAIN}/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...context,
+      text: message,
+    }),
+  });
+};
+
+export const sendMessage = async (message, botToken, chatContext) => {
+  if (message.length <= 4096) {
+    return await send(message, botToken, chatContext);
+  }
+
+  const limit = 4000;
+
+  for (let i = 0; i < message.length; i += limit) {
+    const msg = message.slice(i, i + limit);
+
+    await send(`<pre>\n${msg}\n</pre>`, botToken, chatContext);
+  }
+
+  return new Response("MESSAGE BATCH SEND", { status: 200 });
+};
+          </code>
+        </pre>
+
+        And fill <u>index.js</u> with this code:
+        <pre>
+          <code>
+import { sendMessage } from "./telegram";
+
+const CHAT_CONTEXT = {
+  chat_id: 1015004128,
+  reply_to_message_id: null,
+  parse_mode: "HTML",
+};
+
+const handleRequest = (token, context) => {
+  return sendMessage("It works", token, context);
+};
+
+const botToken = "6079022061:AAFWgW7O2_2Hxp-Bk7Q3TgFf_ie3aectUfc";
+
+export default {
+  async fetch(request) {
+    return handleRequest(botToken, CHAT_CONTEXT);
+  },
+};
+          </code>
+        </pre>
+
+        Now start your bot (or reload the local page) and check the results.
+        You should receive a message "It works" in that chat with your bot.
+        At this point you can send messages from a worker to your bot.
+      </p>
+
+      <p>
+        Let's move on and add some command to your bot.
+      </p>
     </section>
 
     <section>
-      <h2>Marketing</h2>
-      Step 4: Monetize Your Bot Once your bot is up and running, it's time to
-      start making money with it. Here are a few ways you can monetize your
-      Telegram bot:
-      <br /><br />
-      Charge users for premium content or services.<br />
-      Accept donations from users who appreciate your bot.<br />
-      Use affiliate marketing to earn commissions on products or services you
-      recommend.<br /><br />
-      Step 5: Promote Your Bot The final step in creating a successful
-      Telegram bot is to promote it to your target audience. Here are a few
-      ways to get the word out:
-      <br /><br />
-      Share your bot on social media.<br />
-      Reach out to influencers in your niche and ask them to promote your
-      bot.<br />
-      Use paid advertising to reach a wider audience.
+      <h2 id="marketing">Marketing</h2>
+      <p>
+        <b>Step 1:</b> Monetize Your Bot Once your bot is up and running, it's time to
+        start making money with it. Here are a few ways you can monetize your
+        Telegram bot:
+      <ul>
+        <li>Charge users for premium content or services.</li>
+        <li>Accept donations from users who appreciate your bot. For example: <a href="https://www.buymeacoffee.com" target="_blank">Buy Me a Coffee</a></li>
+        <li>Use affiliate marketing to earn commissions on products or services you
+          recommend.</li>
+      </ul>
+      </p>
+      <p>
+        <b>Step 2:</b> Promote Your Bot The final step in creating a successful
+        Telegram bot is to promote it to your target audience. Here are a few
+        ways to get the word out:
+      <ul>
+        <li>Share your bot on social media.</li>
+        <li>Reach out to influencers in your niche and ask them to promote your
+          bot.</li>
+        <li>Use paid advertising to reach a wider audience.</li>
+      </ul>
+      </p>
     </section>
 
     <section>
-      <h2>Conclusion</h2>
-      Creating a Telegram bot with ChatGPT is a simple and effective way to
-      earn money online. By following the steps outlined in this guide, you
-      can create a bot that engages with users, provides valuable information,
-      and generates income. So why not give it a try?
+      <h2 id="conclusion">Conclusion</h2>
+<p>      Creating a Telegram bot with ChatGPT is a simple and effective way to
+  earn money online. By following the steps outlined in this guide, you
+  can create a bot that engages with users, provides valuable information,
+  and generates income. So why not give it a try?</p>
     </section>
 
     <section>
-      <h3>FAQ</h3>
+      <h3 id="faq">FAQ</h3>
       <details>
         <summary>How much does it cost to create a Telegram bot with ChatGPT?</summary>
         <p>Creating a Telegram bot with ChatGPT is free, but you may incur costs
