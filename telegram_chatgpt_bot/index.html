@@ -29,7 +29,7 @@
     <p class="banner">
       See also: Do not want to waste your time and make mistakes?
       <br />
-      Use ready-to-use version without coding skills:
+      Use ready version without coding skills:
       <a href="https://onout.org/telegramGPT/" target="_blank">Telegram ChatGPT bot</a>
     </p>
   </header>
@@ -38,6 +38,7 @@
       <h2>Table of contents</h2>
       <ul>
         <li><a href="#why-do-you-want-it">Why?</a></li>
+        <li><a href="#brief-description">Brief description</a></li>
         <li><a href="#initial-setup">Initial setup</a></li>
         <li><a href="#development">Development</a></li>
         <li><a href="#marketing">Marketing</a></li>
@@ -66,6 +67,26 @@
         natural language queries. By combining ChatGPT with a Telegram bot,
         you can create a chatbot that can answer questions and provide
         information to users.
+      </p>
+    </section>
+
+    <section>
+      <h2 id="brief-description">
+        Brief description
+      </h2>
+      <p>
+        In this article we want to create a simple bot that works on Cloudflare workers
+        and handles users messages with ChatGPT. Firstly we will create all necessary
+        accounts. We will write our code in <b>JavaScript</b> following rules of
+        <b>Wrangler</b> (<abbr title="Command line interface">CLI</abbr> for Cloudflare Workers),
+        <b>Telegram bot API</b> and <b>OpenAI API</b>. We deploy our code to Cloudflare and open a domain that
+        will be attached to our worker. It triggers a request to Telegram to set the domain as handler
+        for user requests to the bot. Also it send bot commands that will be available for users.
+        Finally we'll be able to use our bot.
+      </p>
+      <p>
+        The picture below shows a general description of the process:
+        <img src="./images/bot_development_description.png" alt="General description of the bot development circle with Cloudflare workers and Telegram API">
       </p>
     </section>
 
@@ -114,7 +135,7 @@
       Telegram bot account and ChatGPT, it's time to connect them.
       Firstly you need to install <a href="https://nodejs.org/">Node.js</a>.
       The major version in this guide is 18. With Node.js installation you will get NPM.
-      Install a <abbr title="Command line interface">CLI</abbr> for workers from the command line interface:
+      Install a CLI for workers from the command line interface:
       <code class="block">
         npm install -g wrangler
       </code>
@@ -247,7 +268,7 @@ export default {
     <section>
       <h2 id="marketing">Marketing</h2>
       <p>
-        <b>Step 1:</b> Monetize Your Bot Once your bot is up and running, it's time to
+        <b>Step 1.</b> Monetize Your Bot Once your bot is up and running, it's time to
         start making money with it. Here are a few ways you can monetize your
         Telegram bot:
       <ul>
@@ -258,7 +279,7 @@ export default {
       </ul>
       </p>
       <p>
-        <b>Step 2:</b> Promote Your Bot The final step in creating a successful
+        <b>Step 2.</b> Promote Your Bot The final step in creating a successful
         Telegram bot is to promote it to your target audience. Here are a few
         ways to get the word out:
       <ul>
@@ -294,5 +315,4 @@ export default {
   </main>
   <footer></footer>
 </body>
-
 </html>
