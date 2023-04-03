@@ -110,7 +110,7 @@
           Send any message to that chat. Now you can receive a chat ID for interacting in that chat.
           Open this link in a browser (replace &lt;TOKEN&gt; with your bot token):
           <code>
-            https://api.telegram.org/bot<5818750440:AAEF4tY2wlSUv3S0ymCaAFpmgTKNDJw9g38>/getUpdates
+            https://api.telegram.org/bot<TOKEN>/getUpdates
           </code>
 
           Copy chat ID from the result. It looks like: <code>1015004128</code>
@@ -166,7 +166,9 @@
           <li>telegram.js</li>
           <li>openai.js</li>
         </ul>
-         
+        
+        <!-- TODO: add screenshow with folder structure -->
+
         Let's fill our <u>constants.js</u> file:
         <pre>
           <code>
@@ -243,6 +245,7 @@ export default {
       </p>
 
       <p>
+        <!-- команды вообще убери пока они не нужны, это путает, только одна команда дефолтная /start и так уже там есть, остальное не надо --->
         Let's move on and add some command to your bot. Now we need to
         connect our bot with Telegram, because at this moment we can send
         information to Telegram, but we cannot react on bot requests.
@@ -267,6 +270,7 @@ export default {
 
     <section>
       <h2 id="marketing">Marketing</h2>
+      <!--по поводу монетизации. в байми э коффе есть функция продажи каких то товаров, там можно продавать собсно лиценз коды. а в боте в телеге считать количество сообщений от юзера, и когда он пришлет больше 3 шт писать сообщение "что бы продолжить общение, пожалуйсте поддержите нас оплатив по ссылке. после оплаты введите кодовое слово которое вам будет показано"  -->
       <p>
         <b>Step 1.</b> Monetize Your Bot Once your bot is up and running, it's time to
         start making money with it. Here are a few ways you can monetize your
