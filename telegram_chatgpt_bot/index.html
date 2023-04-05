@@ -41,6 +41,7 @@
         <li><a href="#brief-description">Brief description</a></li>
         <li><a href="#initial-setup">Initial setup</a></li>
         <li><a href="#development">Development</a></li>
+        <li><a href="#monetization">Monetization</a></li>
         <li><a href="#marketing">Marketing</a></li>
         <li><a href="#conclusion">Conclusion</a></li>
         <li><a href="#faq">FAQ</a></li>
@@ -130,6 +131,11 @@
 
     <section>
       <h2 id="development">Development</h2>
+      <blockquote>
+        Do not use <u>_</u> (underscore) in the name in <u>wrangler.toml</u>.
+        Cloudflare has some differences in SSL certificates for such subdomains.
+        So there is a chance that telegram bot will not work with this name.
+      </blockquote>
       <p>
         Now that you've set up both your
       Telegram bot account and ChatGPT, it's time to connect them.
@@ -139,13 +145,40 @@
       <code class="block">
         npm install -g wrangler
       </code>
-      Create a new folder somewhere in your system. We name it <b>chat_bot</b>.
+      Create a new folder somewhere in your system. We name it <b>chat-bot</b>.
       Open your folder and initialize your project:
       <code class="block">
         npx wrangler init .
       </code>
-      Answer on all all questions like this:
-      <img src="./images/wrangler_questions.jpg" alt="">
+      You will see questions about this project. Answer the questions so as
+      not to deviate from our guide:
+      <code class="block">
+        > No package.json found. Would you like to create one? <span class="blue">yes</span>
+        <br />
+        > Would you like to use TypeScript? <span class="red">no</span>
+        <br />
+        > Would you like to create a Worker at src/index.js? <span class="blue">yes</span>
+        <br />
+        > Would you like us to write your first test TypeScript? <span class="red">no</span>
+      </code>
+
+      Replace <u>wrangler.toml</u> content. Fill <code>TG_BOT_TOKEN</code>, <code>OPEN_AI_TOKEN</code> and
+      <code>CHAT_ID</code> regarding above information from the <b>Initial setup</b> section:
+      <pre>
+        <code>
+name = "chatbot"
+main = "src/index.js"
+# date depends on a wrangler version. It's probable will be a date of your work with code
+compatibility_date = "2023-03-28"
+send_metrics = false
+
+[vars]
+
+TG_BOT_TOKEN = ""
+OPEN_AI_TOKEN = ""
+CHAT_ID = ""
+        </code>
+      </pre>
 
       Open <code>package.json</code> file and change a start script to
       <code>"start": "wrangler dev --local",</code>
@@ -160,14 +193,15 @@
       <p>
         Now we can start to write a new code for our bot.
         First of all let's create different files for different sources and actions.
-        Create files these files inside of the <u>src</u> folder:
+        Create these files inside of the <u>src</u> folder:
         <ul>
           <li>constants.js</li>
           <li>telegram.js</li>
           <li>openai.js</li>
         </ul>
-        
-        <!-- TODO: add screenshow with folder structure -->
+
+        So it should be like this:
+        <img src="./images/files-structure.png" alt="The structure of files in a source folder">
 
         Let's fill our <u>constants.js</u> file:
         <pre>
@@ -177,12 +211,9 @@ export const OPENAI_API_DOMAIN = "https://api.openai.com";
           </code>
         </pre>
 
-        Now put code for Telegram:
+        Now put code for Telegram. For now it's only for sending our messages through Telegram API:
         <pre>
           <code>
-import { TELEGRAM_API_DOMAIN } from "./constants";
-
-// Interact with a Telegram API
 const send = async (message, token, context) => {
   return await fetch(`${TELEGRAM_API_DOMAIN}/bot${token}/sendMessage`, {
     method: "POST",
@@ -214,26 +245,31 @@ export const sendMessage = async (message, botToken, chatContext) => {
           </code>
         </pre>
 
-        And fill <u>index.js</u> with this code:
+        Finally replace code in <u>index.js</u> with this code.
+        We'll just send some message to our bot to check if it works:
         <pre>
           <code>
 import { sendMessage } from "./telegram";
 
-const CHAT_CONTEXT = {
-  chat_id: 1015004128,
-  reply_to_message_id: null,
-  parse_mode: "HTML",
-};
+const getChatContext = (env) => {
+  const { CHAT_ID } = env;
 
-const handleRequest = (token, context) => {
-  return sendMessage("It works", token, context);
+  return {
+    chat_id: Number(CHAT_ID),
+    reply_to_message_id: null,
+    parse_mode: "HTML",
+  };
 };
-
-const botToken = "6079022061:AAFWgW7O2_2Hxp-Bk7Q3TgFf_ie3aectUfc";
 
 export default {
-  async fetch(request) {
-    return handleRequest(botToken, CHAT_CONTEXT);
+  /* We're able to access our wrangler.toml variables with a env parameter */
+  async fetch(request, env) {
+    const { TG_BOT_TOKEN } = env;
+    const chatContext = getChatContext(env);
+
+    await sendMessage("It works", TG_BOT_TOKEN, chatContext);
+
+    return new Response("yep", { status: 200 });
   },
 };
           </code>
@@ -241,31 +277,214 @@ export default {
 
         Now start your bot (or reload the local page) and check the results.
         You should receive a message "It works" in that chat with your bot.
-        At this point you can send messages from a worker to your bot.
+        At this point you can send messages to the bot when making requests to
+        worker URL.
       </p>
 
       <p>
-        <!-- команды вообще убери пока они не нужны, это путает, только одна команда дефолтная /start и так уже там есть, остальное не надо --->
-        Let's move on and add some command to your bot. Now we need to
-        connect our bot with Telegram, because at this moment we can send
-        information to Telegram, but we cannot react on bot requests.
-        For this we have to set webhook. In simple word - tell Telegram which
-        URL will be connected and answer on our bot commands.
-        Add this code to <u>telegram.js</u>:
+        Let's move on and connect ChatGPT with our bot. So we need to handle user messages
+        and send it to OpenAI API. And after receiving a response send it back to the chat.
+        Firstly to receive user messages we need to tell Telegram our worker URL. So Telegram
+        will know where we can handle all the messages.
+        Add this code in the end of <u>telegram.js</u>:
         <pre>
           <code>
-            ...
+const bindTelegramWebHook = async (token, url) => {
+  return await fetch(`${TELEGRAM_API_DOMAIN}/bot${token}/setWebhook`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url,
+    }),
+  }).then((res) => res.json());
+};
+
+const checkIsWebhookSet = async (token) => {
+  try {
+    const response = await fetch(
+      `${TELEGRAM_API_DOMAIN}/bot${token}/getWebhookInfo`
+    ).then((res) => res.json());
+
+    return !!response?.result?.url;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
+export const setupBot = async (request, botToken) => {
+  const domain = new URL(request.url).host;
+  const url = `https://${domain}/telegram/${botToken}/webhook`;
+  const isWebhookSet = await checkIsWebhookSet(botToken);
+
+  if (!isWebhookSet) {
+    await bindTelegramWebHook(botToken, url);
+  }
+};
           </code>
         </pre>
+
+        Add this code to <u>openai.js</u>. Here we just send a user message to OpenAI API
+        according to their rules:
+        <pre>
+          <code>
+import { OPENAI_API_DOMAIN } from "./constants";
+
+const requestCompletionsFromChatGPT = async (message, apiToken) => {
+  const body = {
+    model: "gpt-3.5-turbo",
+    messages: [
+      /* here should be history of the previous messages */
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+  };
+
+  const resp = await fetch(`${OPENAI_API_DOMAIN}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiToken}`,
+    },
+    body: JSON.stringify(body),
+  }).then((res) => res.json());
+
+  if (resp.error?.message) {
+    throw new Error(
+      `OpenAI API error\n> ${resp.error.message}\n Prameters: ${JSON.stringify(
+        body
+      )}`
+    );
+  }
+
+  return resp.choices[0].message.content;
+};
+
+export const msgChatWithOpenAI = async (message, apiToken) => {
+  try {
+    return await requestCompletionsFromChatGPT(message, apiToken);
+  } catch (error) {
+    return error;
+  }
+};            
+          </code>
+        </pre>
+
+        Finally replace <u>index.js</u> content with this code. Here we get
+        an unprocessed request. Check if the URL is ours and if the request contains the user's message. If
+        everything is fine, we are sending the 1st request to OpenAI. If we receive an answer,
+        we will send a 2nd request sending this answer as a response to the Telegram API:
+        <pre>
+          <code>
+import { sendMessage, setupBot } from "./telegram";
+import { msgChatWithOpenAI } from "./openai";
+
+const getChatContext = (env) => {
+  const { CHAT_ID } = env;
+
+  return {
+    chat_id: Number(CHAT_ID),
+    reply_to_message_id: null,
+    parse_mode: "HTML",
+  };
+};
+
+const extractUserMessage = async (request) => {
+  try {
+    const raw = await request.json();
+
+    return raw?.message?.text;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const requestToOpenAI = async ({ request, openAiToken }) => {
+  try {
+    const message = await extractUserMessage(request);
+
+    if (!message) return null;
+
+    return await msgChatWithOpenAI(message, openAiToken);
+  } catch (error) {
+    console.error(error);
+    return new Response(
+      JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+      }),
+      { status: 200 }
+    );
+  }
+};
+
+const handleRequest = async (params) => {
+  const { request, chatContext, botToken } = params;
+  const { pathname } = new URL(request.url);
+
+  try {
+    if (pathname === `/telegram/${botToken}/webhook`) {
+      const response = await requestToOpenAI(params);
+
+      if (response) {
+        await sendMessage(response, botToken, chatContext);
+      } else if (response instanceof Error) {
+        await sendMessage("Cannot process your request", botToken, chatContext);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error(error);
+
+    return new Response(
+      `
+      <h2>Something went wrong</h2>
+      <p>Error: ${JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+      })}</p>
+    `,
+      {
+        status: 500,
+        headers: { "Content-Type": "text/html" },
+      }
+    );
+  }
+};
+
+export default {
+  async fetch(request, env) {
+    const { TG_BOT_TOKEN, OPEN_AI_TOKEN } = env;
+    const chatContext = getChatContext(env);
+
+    await setupBot(request, TG_BOT_TOKEN);
+
+    const response = await handleRequest({
+      request,
+      chatContext,
+      botToken: TG_BOT_TOKEN,
+      openAiToken: OPEN_AI_TOKEN,
+    });
+
+    return response || new Response("yep", { status: 200 });
+  },
+};
+          </code>
+        </pre>
+
+        Now you can open your bot and try to ask something. After a few seconds
+        you should see an answer that ChatGPT is generated for you.
       </p>
-      <h3>
-        TODO: add code for requests to OpenAI API
-      <h3>
-        TODO: add code for handling chat messages (send it to ChatGPT)
-      </h3>
-      <h3>
-        TODO: add description about monetization
-      </h3>
+    </section>
+
+    <section>
+      <h2 id="monetization">Monetization</h2>
+      <p>TODO</p>
     </section>
 
     <section>

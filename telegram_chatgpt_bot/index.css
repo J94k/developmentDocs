@@ -48,6 +48,14 @@ code.block {
   white-space: nowrap;
 }
 
+.blue {
+  color: #0000ff;
+}
+
+.red {
+  color: #ff0000;
+}
+
 footer {
   padding: 1rem 0;
 }
